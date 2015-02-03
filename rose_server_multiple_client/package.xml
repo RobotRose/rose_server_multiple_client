@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<package>
+  <name>rose_server_multiple_client</name>
+  <version>0.0.1</version>
+  <description>Metapackage for the ROS Packages for the rose_server_multiple_client package</description>
+
+  <author email="langen@robot-rose.nl">Mathijs de Langen</author>
+  <maintainer email="langen@robot-rose.nl">Mathijs de Langen</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>server_multiple_client_msgs</run_depend>
+  <run_depend>server_multiple_client</run_depend>
+
+  <export>
+    <metapackage />
+  </export>
+</package>
