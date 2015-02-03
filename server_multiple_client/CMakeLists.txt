@@ -7,17 +7,16 @@ find_package( catkin
 		server_multiple_client_msgs
 )
 
-include_directories(${PROJECT_SOURCE_DIR}/include ${catkin_INCLUDE_DIRS})
-
 set(CMAKE_CXX_FLAGS "-std=c++0x -fPIC -g")
 
 catkin_package(
   INCLUDE_DIRS include
-  LIBRARIES server_multiple_client
 )
 
-target_link_libraries(server_multiple_client ${catkin_LIBRARIES})
-add_dependencies(server_multiple_client ${PROJECT_NAME}_generate_messages_cpp)
+include_directories(
+	${catkin_INCLUDE_DIRS}
+	include 
+)
 
 install(DIRECTORY include/${PROJECT_NAME}/
   DESTINATION include/${CATKIN_PACKAGE_INCLUDE_DESTINATION}
