@@ -10,7 +10,10 @@ find_package( catkin
 set(CMAKE_CXX_FLAGS "-std=c++0x -fPIC -g")
 
 catkin_package(
-  INCLUDE_DIRS include
+  INCLUDE_DIRS 
+  	include
+  CATKIN_DEPENDS 
+  	server_multiple_client_msgs
 )
 
 include_directories(
