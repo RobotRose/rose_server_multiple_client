@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package>
+  <name>server_multiple_client</name>
+  <version>0.0.1</version>
+  <description>The server_multiple_client package</description>
+
+  <maintainer email="langen@robot-rose.nl">Mathijs de langen</maintainer>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>server_multiple_client_msgs</build_depend>
+
+  <run_depend>server_multiple_client_msgs</run_depend>
+  <export>
+  </export>
+</package>
