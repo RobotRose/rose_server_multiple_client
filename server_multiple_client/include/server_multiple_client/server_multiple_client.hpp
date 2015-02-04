@@ -29,7 +29,7 @@
 #include <actionlib/client/action_client.h>
 
 #include "rose_common/common.hpp"
-#include "rose20_common/ros_name.hpp"
+#include "ros_name/ros_name.hpp"
 #include "server_multiple_client/complex_client.hpp"
 
 #include "server_multiple_client_msgs/smc_dummy_serverAction.h"

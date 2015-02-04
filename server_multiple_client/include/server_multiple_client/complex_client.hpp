@@ -26,7 +26,7 @@
 #include <actionlib/client/action_client.h>
 
 #include "rose_common/common.hpp"
-#include "rose20_common/ros_name.hpp"
+#include "ros_name/ros_name.hpp"
 
 #define ROS_NAME_CC     (ROS_NAME + "|CC|" + client_name_)
 
