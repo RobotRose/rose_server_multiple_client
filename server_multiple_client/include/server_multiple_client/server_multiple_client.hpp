@@ -28,7 +28,7 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/action_client.h>
 
-#include "rose20_common/common.hpp"
+#include "rose_common/common.hpp"
 #include "rose20_common/ros_name.hpp"
 #include "server_multiple_client/complex_client.hpp"
 
