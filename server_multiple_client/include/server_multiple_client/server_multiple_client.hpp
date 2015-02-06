@@ -214,7 +214,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     }
 
     template <class ClientActionType>
-    const typename ComplexClient<ClientActionType>::Result getResult(const std::string& client_name)
+    const typename ComplexClient<ClientActionType>::ResultConstPtr getResult(const std::string& client_name)
     {
         return castComplexClientBaseToComplexClientPtr<ClientActionType>(getClient(client_name))->getLastResult();
     }

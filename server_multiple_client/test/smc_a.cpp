@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		ROS_INFO("[%s] Premitted execute time is: %.4fs.", ((std::string)NAME).c_str(), execute_time);
 
 		if(smc.waitForResult(CLIENT1, ros::Duration(execute_time)))
-			ROS_INFO("RESULT: %d", smc.getResult<server_multiple_client_msgs::smc_testAction>(CLIENT1).result);
+			ROS_INFO("RESULT: %d", smc.getResult<server_multiple_client_msgs::smc_testAction>(CLIENT1)->result);
 		else
 			ROS_WARN("NO RESULT, execute time has been exceeded.");
 	}

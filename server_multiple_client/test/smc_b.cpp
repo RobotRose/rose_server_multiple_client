@@ -71,11 +71,12 @@ void CB_goal(const server_multiple_client_msgs::smc_testGoalConstPtr& goal, SMC*
 		// Success! Add results and send to client SMC A
 		auto result_c = smc->getResult<server_multiple_client_msgs::smc_testAction>(CLIENT1);
 		auto result_d = smc->getResult<server_multiple_client_msgs::smc_testAction>(CLIENT2);
-		int temp = result_c.result;
-		result_c.result += result_d.result;
+		auto server_result = *result_c;
+		int temp = result_c->result;
+		server_result.result += result_d->result;
 
-		smc->sendServerResult(true, result_c);
-		ROS_INFO("%s succesfully completed, result C: %d, result D: %d, result C+D: %d.", ((std::string)NAME).c_str(), temp, result_d.result, result_c.result);
+		smc->sendServerResult(true, server_result);
+		ROS_INFO("%s succesfully completed, result C: %d, result D: %d, result C+D: %d.", ((std::string)NAME).c_str(), temp, result_d->result, server_result.result);
 	}
 	
 }

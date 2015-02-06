@@ -74,7 +74,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         , client_name_(client_name)
         , goal_outstanding_(false)
         , last_goal_succes_(false)
-        , last_result_(Result())
+        , last_result_(ResultConstPtr())
         , server_connected_(false)
         , stop_wait_for_server_thread_(false)
     {
@@ -255,7 +255,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         return goal_outstanding_;
     }
 
-    Result getLastResult()
+    ResultConstPtr getLastResult()
     {
         std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
         return last_result_;
@@ -269,11 +269,6 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
   private:
 
     void setLastResult(ResultConstPtr result)
-    {
-        setLastResult(*result);
-    }
-
-    void setLastResult(const Result result)
     {
         std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
         last_result_ = result;
@@ -397,7 +392,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     std::atomic_bool                last_goal_succes_;
     std::atomic_bool                server_connected_;
 
-    Result                          last_result_;
+    ResultConstPtr                  last_result_;
     std::mutex                      last_result_mutex_; 
 
     std::recursive_mutex            cancel_mutex_;
