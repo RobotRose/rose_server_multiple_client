@@ -167,7 +167,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
         else
         {
             // Select the only client 
-            return sendGoal(goal, clients_.begin()->first, send_cancel_wait_time);
+            return sendGoal<ClientActionType>(goal, clients_.begin()->first, send_cancel_wait_time);
         }
     }
 
