@@ -150,22 +150,32 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     //! @todo OH [IMPR]: Add send and wait functionality.
     //! @todo OH [IMPR]: Add send and fail send fail result on not completing.
 
-    // send_cancel_wait_time specifies the time to wait, before canceling a goal which was send in the past.
-    // A send_cancel_wait_time of 0 specifies an infinite timeout.
     template <class ClientActionType>
-    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, std::string client_name = "", const float& send_cancel_wait_time = 0.0)
+    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const float& send_cancel_wait_time = 0.0)
     {
-        if(client_name == "" and clients_.size() > 1)
+        if(clients_.empty())
+        {
+            ROS_ERROR_NAMED(ROS_NAME_SMC, "sendGoal: Cannot sendGoal because there are no clients.");
+            return false;
+        }
+            
+        if(clients_.size() > 1)
         {
             ROS_ERROR_NAMED(ROS_NAME_SMC, "sendGoal: Specify a client name when a SMC has more than one client.");
             return false;
         }
-        else if ( client_name == "" )
+        else
         {
             // Select the only client 
-            client_name = clients_.begin()->first;
+            return sendGoal(goal, clients_.begin()->first, send_cancel_wait_time);
         }
+    }
 
+    // send_cancel_wait_time specifies the time to wait, before canceling a goal which was send in the past.
+    // A send_cancel_wait_time of 0 specifies an infinite timeout.
+    template <class ClientActionType>
+    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const std::string& client_name, const float& send_cancel_wait_time = 0.0)
+    {
         ROS_DEBUG_NAMED(ROS_NAME_SMC, "sendGoal -> %s", client_name.c_str());
 
         if(clients_.count(client_name) == 0)
@@ -216,19 +226,28 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
         return castComplexClientBaseToComplexClientPtr<ClientActionType>(clients_[latest_client_])->getLastResult();
     }
 
-    bool waitForResult(const std::string& client_name = "", const ros::Duration& timeout = ros::Duration(0.0))
+    bool waitForResult(const ros::Duration& timeout = ros::Duration(0.0))
     {
-        if(client_name == "" and clients_.size() > 1)
+        if(clients_.empty())
+        {
+            ROS_ERROR_NAMED(ROS_NAME_SMC, "waitForResult: Cannot wait for result because there are no clients.");
+            return false;
+        }
+
+        if(clients_.size() > 1)
         {
             ROS_ERROR_NAMED(ROS_NAME_SMC, "waitForResult: Specify a client name when a SMC has more than one client.");
             return false;
         }
-        else if ( client_name == "" )
+        else
         {
             // Select the only client 
-            return clients_.begin()->second->waitForResult(timeout);
+            return waitForResult(clients_.begin()->first, timeout);
         }
+    }
 
+    bool waitForResult(const std::string& client_name, const ros::Duration& timeout = ros::Duration(0.0))
+    {
         return getClient(client_name)->waitForResult(timeout);
     }
 
@@ -248,7 +267,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
         return all_success; 
     }
 
-    bool waitForSuccess(const std::string& client_name = "", const ros::Duration& timeout = ros::Duration(0.0))
+    bool waitForSuccess(const std::string& client_name, const ros::Duration& timeout = ros::Duration(0.0))
     {
         return getClient(client_name)->waitForSuccess(timeout);
     }
@@ -265,7 +284,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
         return true; 
     }
 
-    bool waitForFailed(const std::string& client_name = "", const ros::Duration& timeout = ros::Duration(0.0))
+    bool waitForFailed(const std::string& client_name, const ros::Duration& timeout = ros::Duration(0.0))
     {
         return not waitForSuccess(client_name, timeout);
     }
