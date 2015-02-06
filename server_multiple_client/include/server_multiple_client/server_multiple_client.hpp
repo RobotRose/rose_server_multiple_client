@@ -153,8 +153,19 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     // send_cancel_wait_time specifies the time to wait, before canceling a goal which was send in the past.
     // A send_cancel_wait_time of 0 specifies an infinite timeout.
     template <class ClientActionType>
-    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const std::string& client_name, const float& send_cancel_wait_time = 0.0)
+    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, std::string client_name = "", const float& send_cancel_wait_time = 0.0)
     {
+        if(client_name == "" and clients_.size() > 1)
+        {
+            ROS_ERROR_NAMED(ROS_NAME_SMC, "sendGoal: Specify a client name when a SMC has more than one client.");
+            return false;
+        }
+        else if ( client_name == "" )
+        {
+            // Select the only client 
+            client_name = clients_.begin()->first;
+        }
+
         ROS_DEBUG_NAMED(ROS_NAME_SMC, "sendGoal -> %s", client_name.c_str());
 
         if(clients_.count(client_name) == 0)
