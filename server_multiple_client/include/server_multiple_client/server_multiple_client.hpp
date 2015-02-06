@@ -28,14 +28,15 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/action_client.h>
 
-#include "rose20_common/common.hpp"
-#include "rose20_common/ros_name.hpp"
-#include "rose20_common/server_multiple_client/complex_client.hpp"
+#include "rose_common/common.hpp"
+#include "ros_name/ros_name.hpp"
 
-#include "rose20_common/smc_dummy_serverAction.h"
-#include "rose20_common/smc_dummy_serverActionGoal.h"
-#include "rose20_common/smc_dummy_serverActionResult.h"
-#include "rose20_common/smc_dummy_serverActionFeedback.h"
+#include "server_multiple_client/complex_client.hpp"
+
+#include "server_multiple_client_msgs/smc_dummy_serverAction.h"
+#include "server_multiple_client_msgs/smc_dummy_serverActionGoal.h"
+#include "server_multiple_client_msgs/smc_dummy_serverActionResult.h"
+#include "server_multiple_client_msgs/smc_dummy_serverActionFeedback.h"
 
 #include "thread_safe_stl_containers/thread_safe_map.h"
 
@@ -44,7 +45,7 @@
 using namespace std;
 using namespace actionlib;
 
-template <class ServerActionType = rose20_common::smc_dummy_serverAction> class ServerMultipleClient
+template <class ServerActionType = server_multiple_client_msgs::smc_dummy_serverAction> class ServerMultipleClient
 {
   public:
     ACTION_DEFINITION(ServerActionType)

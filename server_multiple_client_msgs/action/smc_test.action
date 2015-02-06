@@ -1,0 +1,9 @@
+# Test action for smc implementations
+# Goal
+int32 goal
+---
+# Result
+int32 result
+---
+# Feedback
+int32 feedback

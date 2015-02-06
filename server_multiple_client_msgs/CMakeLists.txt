@@ -18,6 +18,7 @@ find_package(catkin
 add_action_files(
 	FILES
 		smc_dummy_server.action
+		smc_test.action
 )
 
 # Generate added messages and services with any dependencies listed here
