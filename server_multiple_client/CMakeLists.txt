@@ -4,8 +4,11 @@ project(server_multiple_client)
 find_package(catkin 
     REQUIRED 
 	  COMPONENTS
-	     server_multiple_client_msgs
-       rose_common
+        actionlib
+	      server_multiple_client_msgs
+        rose_common
+        roscpp
+        genmsg
 )
 
 set(CMAKE_CXX_FLAGS "-std=c++0x -fPIC -g")
@@ -14,8 +17,11 @@ catkin_package(
     INCLUDE_DIRS 
   	    include
     CATKIN_DEPENDS 
-  	    server_multiple_client_msgs
+  	    actionlib
+        server_multiple_client_msgs
         rose_common
+        roscpp
+        genmsg 
 )
 
 include_directories(
