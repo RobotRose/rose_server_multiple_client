@@ -245,7 +245,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
             custom_feedback_cb_(feedback);
     }
 
-    string getName()
+    std::string getName()
     {
         return client_name_;
     }
@@ -258,6 +258,10 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     ResultConstPtr getLastResult()
     {
         std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
+        
+        if(last_result_ == NULL)
+            return ResultConstPtr(new Result);
+
         return last_result_;
     }
 

@@ -521,8 +521,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
         if( server_->isPreemptRequested() )
         {
             ROS_DEBUG_NAMED(ROS_NAME_SMC, "CB_serverGoalReceived, Preempted! NOT calling user callback.");
-            // server_->setPreempted(Result(), "Preempted by SMC");
-            // CB_serverPreempt();
+            server_->setPreempted(Result(), "Preempted by SMC");
         }
         else
         {
