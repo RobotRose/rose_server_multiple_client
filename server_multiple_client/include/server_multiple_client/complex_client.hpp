@@ -291,7 +291,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
 
         // Tell the user it is not smart to block forever
         if(timeout.toSec() == 0.0)
-            ROS_WARN_THROTTLE_NAMED(0.5, ROS_NAME_CC, "A timeout of 0 implies an infinite timeout, this is probably not smart to use!");
+            ROS_WARN_ONCE_NAMED(ROS_NAME_CC, "A timeout of 0 implies an infinite timeout, this is probably not smart to use! This warning will only be displayed once.");
 
         // Did we get a result or a timeout
         if( simple_client_->waitForResult(ros::Duration(timeout)) )
