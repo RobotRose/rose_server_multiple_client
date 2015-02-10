@@ -365,8 +365,11 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
                 server_connected_ = true;
             else
             {
+                if(server_connected_)
+                    ROS_WARN_NAMED(ROS_NAME_CC, "Server not connected, will wait for server of client '%s'.", client_name_.c_str()); 
+
                 server_connected_ = false;
-                ROS_WARN_THROTTLE_NAMED(1.0, ROS_NAME_CC, "Server not connected, will continue waiting for server of client '%s'.", client_name_.c_str()); 
+                ros::Duration(1.0).sleep();
                 continue;
             }
         
