@@ -287,7 +287,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
             return true;
         }
 
-        ROS_INFO_NAMED(ROS_NAME_CC, "Waiting on result of client '%s' with timeout %.4fs", client_name_.c_str(), timeout.toSec());
+        ROS_DEBUG_NAMED(ROS_NAME_CC, "Waiting on result of client '%s' after specified timeout of %.4fs.", client_name_.c_str(), timeout.toSec());
 
         // Tell the user it is not smart to block forever
         if(timeout.toSec() == 0.0)
@@ -329,7 +329,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     // Check if server is connected, sets server_connected_ to false
     void checkForServer()
     {
-        ROS_INFO_NAMED(ROS_NAME_CC, "Client '%s' will check connection to server.", client_name_.c_str()); 
+        ROS_DEBUG_NAMED(ROS_NAME_CC, "Client '%s' will check connection to server.", client_name_.c_str()); 
         cv_.notify_all();
     }
 
