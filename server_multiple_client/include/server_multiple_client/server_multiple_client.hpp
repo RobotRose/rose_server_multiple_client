@@ -40,7 +40,8 @@
 
 #include "thread_safe_stl_containers/thread_safe_map.h"
 
-#define ROS_NAME_SMC    (ROS_NAME + "|SMC")
+#define ROS_NAME_SMC                    (ROS_NAME + "|SMC")
+#define SMC_DEFAULT_EXECUTE_TIMEOUT     0.01
 
 using namespace std;
 using namespace actionlib;
@@ -151,7 +152,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     //! @todo OH [IMPR]: Add send and fail send fail result on not completing.
 
     template <class ClientActionType>
-    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const float& send_cancel_wait_time = 0.0)
+    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const float& execute_timeout = SMC_DEFAULT_EXECUTE_TIMEOUT)
     {
         if(clients_.empty())
         {
@@ -167,14 +168,14 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
         else
         {
             // Select the only client 
-            return sendGoal<ClientActionType>(goal, clients_.begin()->first, send_cancel_wait_time);
+            return sendGoal<ClientActionType>(goal, clients_.begin()->first, execute_timeout);
         }
     }
 
-    // send_cancel_wait_time specifies the time to wait, before canceling a goal which was send in the past.
-    // A send_cancel_wait_time of 0 specifies an infinite timeout.
+    // execute_timeout specifies the time to wait, before canceling a goal which was send in the past.
+    // A execute_timeout of 0 specifies an infinite timeout.
     template <class ClientActionType>
-    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const std::string& client_name, const float& send_cancel_wait_time = 0.0)
+    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const std::string& client_name, const float& execute_timeout = SMC_DEFAULT_EXECUTE_TIMEOUT)
     {
         ROS_DEBUG_NAMED(ROS_NAME_SMC, "sendGoal -> %s", client_name.c_str());
 
@@ -184,7 +185,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
             return false;
         }
 
-        if(!castComplexClientBaseToComplexClientPtr<ClientActionType>(clients_[client_name])->sendComplexGoal(goal, send_cancel_wait_time))
+        if(!castComplexClientBaseToComplexClientPtr<ClientActionType>(clients_[client_name])->sendComplexGoal(goal, execute_timeout))
             return false;
 
         latest_client_ = client_name;
@@ -193,7 +194,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     }
 
     template <class ClientActionType>
-    bool sendGoals(const typename ComplexClient<ClientActionType>::Goal& goal, const std::vector<string>& client_names, const float& send_cancel_wait_time = 0.0)
+    bool sendGoals(const typename ComplexClient<ClientActionType>::Goal& goal, const std::vector<string>& client_names, const float& execute_timeout = SMC_DEFAULT_EXECUTE_TIMEOUT)
     {
         if( hasBusyClients() )
         {
@@ -203,7 +204,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
 
         for(const auto& client_name : client_names)
         {
-            if( not sendGoal<ClientActionType>(goal, client_name, send_cancel_wait_time) )
+            if( not sendGoal<ClientActionType>(goal, client_name, execute_timeout) )
             {
                 cancelAllClients();
                 return false;

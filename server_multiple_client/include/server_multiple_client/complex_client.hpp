@@ -106,9 +106,9 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     // Send a goal to the server.
-    // send_cancel_wait_time specifies the time to wait before canceling a goal which was send in the past.
-    // A send_cancel_wait_time of 0 specifies an infinite timeout.
-    bool sendComplexGoal(const Goal& goal, float send_cancel_wait_time)
+    // execute_timeout specifies the time to wait before canceling a goal which was send in the past.
+    // A execute_timeout of 0 specifies an infinite timeout.
+    bool sendComplexGoal(const Goal& goal, float execute_timeout)
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "Sending goal to client '%s'.", client_name_.c_str());
 
@@ -125,9 +125,9 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         // If not succesfull we have to cancel our previous goal first.
         if( hasGoalOutstanding() )
         {
-            ROS_DEBUG_NAMED(ROS_NAME_CC, "There is an outstanding goal of '%s', giving it %.4fs to finish.", client_name_.c_str(), send_cancel_wait_time);
+            ROS_DEBUG_NAMED(ROS_NAME_CC, "There is an outstanding goal of '%s', giving it %.4fs to finish.", client_name_.c_str(), execute_timeout);
             
-            if( not waitForResult(ros::Duration(send_cancel_wait_time)) )
+            if( not waitForResult(ros::Duration(execute_timeout)) )
             {
                 ROS_DEBUG_NAMED(ROS_NAME_CC, "The outstanding goal for '%s' did not finish in time, canceling.", client_name_.c_str());
                 
