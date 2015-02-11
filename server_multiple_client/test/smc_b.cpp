@@ -11,33 +11,30 @@
 * 
 ***********************************************************************************/
 
-
-
 #include <ros/ros.h> 
 
-#include <ros/ros.h> 
 #include <std_msgs/Bool.h> 
-#include "rose20_common/server_multiple_client/server_multiple_client.hpp"
+#include "server_multiple_client/server_multiple_client.hpp"
 
-#include "rose20_common/smc_testAction.h"
-#include "rose20_common/smc_testActionGoal.h"
-#include "rose20_common/smc_testActionResult.h"
-#include "rose20_common/smc_testActionFeedback.h"
+#include "server_multiple_client_msgs/smc_testAction.h"
+#include "server_multiple_client_msgs/smc_testActionGoal.h"
+#include "server_multiple_client_msgs/smc_testActionResult.h"
+#include "server_multiple_client_msgs/smc_testActionFeedback.h"
 
 #define NAME 	"TEST_SMC_B"
 #define CLIENT1 "TEST_SMC_C"
 #define CLIENT2 "TEST_SMC_D"
 
-typedef ServerMultipleClient<rose20_common::smc_testAction> SMC;
+typedef ServerMultipleClient<server_multiple_client_msgs::smc_testAction> SMC;
 
 SMC* smc_;
 
-void CB_goal(const rose20_common::smc_testGoalConstPtr& goal, SMC* smc)
+void CB_goal(const server_multiple_client_msgs::smc_testGoalConstPtr& goal, SMC* smc)
 {
 	ROS_INFO("CB_goal: %s, forwarding.", NAME);
 
 	// Send a goal to SMC C
-	if( not smc->sendGoal<rose20_common::smc_testAction>(*goal, CLIENT1, 2.0) )
+	if( not smc->sendGoal<server_multiple_client_msgs::smc_testAction>(*goal, CLIENT1, 2.0) )
 	{
 		ROS_WARN("%s", ((std::string)NAME + " unable to send goal to " + (std::string)CLIENT1 + ", aborting goal.").c_str());
 		smc->abort();
@@ -47,7 +44,7 @@ void CB_goal(const rose20_common::smc_testGoalConstPtr& goal, SMC* smc)
 		ROS_INFO("%s", ((std::string)NAME + " succesfully send goal to " + (std::string)CLIENT1).c_str());
 
 	// Send a goal to SMC D
-	if( not smc->sendGoal<rose20_common::smc_testAction>(*goal, CLIENT2, 2.0) )
+	if( not smc->sendGoal<server_multiple_client_msgs::smc_testAction>(*goal, CLIENT2, 2.0) )
 	{
 		ROS_WARN("%s", ((std::string)NAME + " unable to send goal to " + (std::string)CLIENT2 + ", aborting goal.").c_str());
 		smc->abort();
@@ -72,13 +69,14 @@ void CB_goal(const rose20_common::smc_testGoalConstPtr& goal, SMC* smc)
 	else
 	{
 		// Success! Add results and send to client SMC A
-		auto result_c = smc->getResult<rose20_common::smc_testAction>(CLIENT1);
-		auto result_d = smc->getResult<rose20_common::smc_testAction>(CLIENT2);
-		int temp = result_c.result;
-		result_c.result += result_d.result;
+		auto result_c = smc->getResult<server_multiple_client_msgs::smc_testAction>(CLIENT1);
+		auto result_d = smc->getResult<server_multiple_client_msgs::smc_testAction>(CLIENT2);
+		auto server_result = *result_c;
+		int temp = result_c->result;
+		server_result.result += result_d->result;
 
-		smc->sendServerResult(true, result_c);
-		ROS_INFO("%s succesfully completed, result C: %d, result D: %d, result C+D: %d.", ((std::string)NAME).c_str(), temp, result_d.result, result_c.result);
+		smc->sendServerResult(true, server_result);
+		ROS_INFO("%s succesfully completed, result C: %d, result D: %d, result C+D: %d.", ((std::string)NAME).c_str(), temp, result_d->result, server_result.result);
 	}
 	
 }
@@ -88,13 +86,13 @@ void CB_preempt(SMC* smc)
 	ROS_INFO("CB_preempt: %s", NAME);
 }
 
-void CB_success(const actionlib::SimpleClientGoalState& state, const rose20_common::smc_testResultConstPtr& client_result)
+void CB_success(const actionlib::SimpleClientGoalState& state, const server_multiple_client_msgs::smc_testResultConstPtr& client_result)
 {
 	ROS_INFO("CB_success: %s, state: %s", CLIENT1,  state.toString().c_str());
 
 }
 
-void CB_fail(const actionlib::SimpleClientGoalState& state, const rose20_common::smc_testResultConstPtr& client_result)
+void CB_fail(const actionlib::SimpleClientGoalState& state, const server_multiple_client_msgs::smc_testResultConstPtr& client_result)
 {
 	ROS_INFO("CB_fail: %s, state: %s", CLIENT1,  state.toString().c_str());
 	
@@ -106,7 +104,7 @@ void CB_active()
 	ROS_INFO("CB_active: %s", CLIENT1);
 }
 
-void CB_feedback(const rose20_common::smc_testFeedbackConstPtr& feedback)
+void CB_feedback(const server_multiple_client_msgs::smc_testFeedbackConstPtr& feedback)
 {
 	ROS_INFO("CB_feedback: %s", CLIENT1);
 }
@@ -141,17 +139,17 @@ int main(int argc, char *argv[])
 		boost::bind(&CB_goal, _1, _2), 
 		boost::bind(&CB_preempt, _1));
 
-	smc_->addClient<rose20_common::smc_testAction>(CLIENT1, 
+	smc_->addClient<server_multiple_client_msgs::smc_testAction>(CLIENT1, 
 	   boost::bind(&CB_success, _1, _2),
 	   boost::bind(&CB_fail, _1, _2),
 	   boost::bind(&CB_active),
 	   boost::bind(&CB_feedback, _1));
 
-	smc_->addClient<rose20_common::smc_testAction>(CLIENT2);
+	smc_->addClient<server_multiple_client_msgs::smc_testAction>(CLIENT2);
 
 	smc_->startServer();
 
-	rose20_common::smc_testGoal goal;
+	server_multiple_client_msgs::smc_testGoal goal;
 
 	ros::Rate rate(100);
 	while(n.ok())

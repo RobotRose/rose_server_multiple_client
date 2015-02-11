@@ -12,17 +12,17 @@
 ***********************************************************************************/
 
 #include <ros/ros.h> 
-#include "rose20_common/server_multiple_client/server_multiple_client.hpp"
+#include "server_multiple_client/server_multiple_client.hpp"
 
-#include "rose20_common/smc_testAction.h"
-#include "rose20_common/smc_testActionGoal.h"
-#include "rose20_common/smc_testActionResult.h"
-#include "rose20_common/smc_testActionFeedback.h"
+#include "server_multiple_client_msgs/smc_testAction.h"
+#include "server_multiple_client_msgs/smc_testActionGoal.h"
+#include "server_multiple_client_msgs/smc_testActionResult.h"
+#include "server_multiple_client_msgs/smc_testActionFeedback.h"
 
 #define NAME 	"TEST_SMC_A"
 #define CLIENT1 "TEST_SMC_B"
 
-typedef ServerMultipleClient<rose20_common::smc_testAction> SMC;
+typedef ServerMultipleClient<server_multiple_client_msgs::smc_testAction> SMC;
 
 int main(int argc, char *argv[])
 {
@@ -33,17 +33,17 @@ int main(int argc, char *argv[])
 
 	SMC smc(n, NAME);
 
-	smc.addClient<rose20_common::smc_testAction>(CLIENT1);
+	smc.addClient<server_multiple_client_msgs::smc_testAction>(CLIENT1);
 
 	smc.startServer();
 
-	rose20_common::smc_testGoal goal;
+	server_multiple_client_msgs::smc_testGoal goal;
 
 	while(n.ok())
 	{
 		ros::spinOnce();
 
-		if(smc.sendGoal<rose20_common::smc_testAction>(goal, CLIENT1, 3.0))
+		if(smc.sendGoal<server_multiple_client_msgs::smc_testAction>(goal, CLIENT1, 3.0))
 			ROS_INFO("%s", ((std::string)NAME + " succesfully send goal to " + (std::string)CLIENT1).c_str());
 		else
 			ROS_INFO("%s", ((std::string)NAME + " unable to send goal to " + (std::string)CLIENT1).c_str());
@@ -52,7 +52,7 @@ int main(int argc, char *argv[])
 		ROS_INFO("[%s] Premitted execute time is: %.4fs.", ((std::string)NAME).c_str(), execute_time);
 
 		if(smc.waitForResult(CLIENT1, ros::Duration(execute_time)))
-			ROS_INFO("RESULT: %d", smc.getResult<rose20_common::smc_testAction>(CLIENT1).result);
+			ROS_INFO("RESULT: %d", smc.getResult<server_multiple_client_msgs::smc_testAction>(CLIENT1)->result);
 		else
 			ROS_WARN("NO RESULT, execute time has been exceeded.");
 	}
