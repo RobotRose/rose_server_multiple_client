@@ -12,25 +12,27 @@
 ***********************************************************************************/
 
 #include <ros/ros.h> 
-#include "rose20_common/server_multiple_client/server_multiple_client.hpp"
 
-#include "rose20_common/smc_testAction.h"
-#include "rose20_common/smc_testActionGoal.h"
-#include "rose20_common/smc_testActionResult.h"
-#include "rose20_common/smc_testActionFeedback.h"
+#include "rose_conversions/conversions.hpp"
+#include "server_multiple_client/server_multiple_client.hpp"
+
+#include "server_multiple_client_msgs/smc_testAction.h"
+#include "server_multiple_client_msgs/smc_testActionGoal.h"
+#include "server_multiple_client_msgs/smc_testActionResult.h"
+#include "server_multiple_client_msgs/smc_testActionFeedback.h"
 
 #define NAME 	"TEST_SMC_C"
 #define CLIENT1 "TEST_SMC_D"
 
-typedef ServerMultipleClient<rose20_common::smc_testAction> SMC;
+typedef ServerMultipleClient<server_multiple_client_msgs::smc_testAction> SMC;
 
 int cnt = 0;
 
-void CB_goal(const rose20_common::smc_testGoalConstPtr& goal, SMC* smc)
+void CB_goal(const server_multiple_client_msgs::smc_testGoalConstPtr& goal, SMC* smc)
 {
 	cnt++;
 	ROS_INFO("CB_goal: %s, ---------------start! %d", NAME, cnt);
-	rose20_common::smc_testResult result;
+	server_multiple_client_msgs::smc_testResult result;
 	result.result = std::rand() % 10;
 	
 	if(result.result == 0)
@@ -62,7 +64,7 @@ void CB_preempt(SMC* smc)
 	ROS_INFO("CB_preempt: %s", NAME);
 }
 
-void CB_feedback(const rose20_common::smc_testFeedbackConstPtr& feedback)
+void CB_feedback(const server_multiple_client_msgs::smc_testFeedbackConstPtr& feedback)
 {
 	ROS_INFO("CB_feedback: %s", NAME);
 }
@@ -80,7 +82,7 @@ int main(int argc, char *argv[])
 	smc.startServer();
 
 	ros::Rate rate(5);
-	while(n.ok() and not (rose20_common::kbhit() and getchar() == 'x'))
+	while(n.ok() and not (rose_conversions::kbhit() and getchar() == 'x'))
 	{
 		ros::spinOnce();
 

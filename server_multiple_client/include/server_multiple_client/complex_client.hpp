@@ -29,15 +29,12 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/action_client.h>
 
-#include "rose20_common/common.hpp"
-#include "rose20_common/ros_name.hpp"
+#include "rose_common/common.hpp"
+#include "ros_name/ros_name.hpp"
 
 #define ROS_NAME_CC     (ROS_NAME + "|CC|" + client_name_)
 
 #define SMC_DEFAULT_CANCEL_TIMEOUT  1.0  // [s]
-
-using namespace std;
-using namespace actionlib;
 
 class ComplexClientBase
 {
@@ -58,8 +55,8 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
 {
   public:
     ACTION_DEFINITION(ClientActionType)
-    typedef boost::function<void (const SimpleClientGoalState& state,  const ResultConstPtr& result) > SimpleFailCallback;
-    typedef boost::function<void (const SimpleClientGoalState& state,  const ResultConstPtr& result) > SimpleDoneCallback;
+    typedef boost::function<void (const actionlib::SimpleClientGoalState& state,  const ResultConstPtr& result) > SimpleFailCallback;
+    typedef boost::function<void (const actionlib::SimpleClientGoalState& state,  const ResultConstPtr& result) > SimpleDoneCallback;
     typedef boost::function<void () > SimpleActiveCallback;
     typedef boost::function<void (const FeedbackConstPtr& feedback) > SimpleFeedbackCallback;
     
@@ -74,12 +71,12 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         , client_name_(client_name)
         , goal_outstanding_(false)
         , last_goal_succes_(false)
-        , last_result_(Result())
+        , last_result_(ResultConstPtr())
         , server_connected_(false)
         , stop_wait_for_server_thread_(false)
     {
         ROS_DEBUG_NAMED(client_name_, "Constructor client '%s'.", client_name_.c_str());
-        simple_client_ = new SimpleActionClient<ClientActionType>(client_name_, true);
+        simple_client_ = new actionlib::SimpleActionClient<ClientActionType>(client_name_, true);
 
         // Start waitForServer thread
         startWaitForServerThread();
@@ -106,9 +103,9 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     // Send a goal to the server.
-    // send_cancel_wait_time specifies the time to wait before canceling a goal which was send in the past.
-    // A send_cancel_wait_time of 0 specifies an infinite timeout.
-    bool sendComplexGoal(const Goal& goal, float send_cancel_wait_time)
+    // canceling_timeout specifies the time to wait before canceling a goal which was send in the past.
+    // A canceling_timeout of 0 specifies an infinite timeout.
+    bool sendComplexGoal(const Goal& goal, float canceling_timeout)
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "Sending goal to client '%s'.", client_name_.c_str());
 
@@ -118,16 +115,15 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
             ROS_WARN_NAMED(ROS_NAME_CC, "Not connected to server, cannot send goal to client '%s'.", client_name_.c_str());            
             return false;
         }
-        
 
         std::lock_guard<std::recursive_mutex> lock(cancel_mutex_);
         // Try to lock the mutex, if succesfull we are not persuing a goal currently thus we can send the new one.
         // If not succesfull we have to cancel our previous goal first.
         if( hasGoalOutstanding() )
         {
-            ROS_DEBUG_NAMED(ROS_NAME_CC, "There is an outstanding goal of '%s', giving it %.4fs to finish.", client_name_.c_str(), send_cancel_wait_time);
+            ROS_DEBUG_NAMED(ROS_NAME_CC, "There is an outstanding goal of '%s', giving it %.4fs to finish.", client_name_.c_str(), canceling_timeout);
             
-            if( not waitForResult(ros::Duration(send_cancel_wait_time)) )
+            if( not waitForResult(ros::Duration(canceling_timeout)) )
             {
                 ROS_DEBUG_NAMED(ROS_NAME_CC, "The outstanding goal for '%s' did not finish in time, canceling.", client_name_.c_str());
                 
@@ -164,7 +160,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         }
 
         // Check if we are actually persuing a goal, otherwise we should not cancel
-        const SimpleClientGoalState& goal_state = simple_client_->getState();
+        const actionlib::SimpleClientGoalState& goal_state = simple_client_->getState();
 
         switch ( goal_state.state_ )
         {
@@ -203,7 +199,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         return waitForResult(timeout);
     }
 
-    void CB_clientDone(const SimpleClientGoalState& state,  const ResultConstPtr& result)
+    void CB_clientDone(const actionlib::SimpleClientGoalState& state,  const ResultConstPtr& result)
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "CB_clientDone() client '%s', goal state: %s", client_name_.c_str(), state.toString().c_str());
         goal_outstanding_ = false;
@@ -245,7 +241,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
             custom_feedback_cb_(feedback);
     }
 
-    string getName()
+    std::string getName()
     {
         return client_name_;
     }
@@ -255,9 +251,13 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         return goal_outstanding_;
     }
 
-    Result getLastResult()
+    ResultConstPtr getLastResult()
     {
         std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
+        
+        if(last_result_ == NULL)
+            return ResultConstPtr(new Result);
+
         return last_result_;
     }
 
@@ -269,11 +269,6 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
   private:
 
     void setLastResult(ResultConstPtr result)
-    {
-        setLastResult(*result);
-    }
-
-    void setLastResult(const Result result)
     {
         std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
         last_result_ = result;
@@ -288,11 +283,11 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
             return true;
         }
 
-        ROS_INFO_NAMED(ROS_NAME_CC, "Waiting on result of client '%s' with timeout %.4fs", client_name_.c_str(), timeout.toSec());
+        ROS_DEBUG_NAMED(ROS_NAME_CC, "Waiting on result of client '%s' after specified timeout of %.4fs.", client_name_.c_str(), timeout.toSec());
 
         // Tell the user it is not smart to block forever
         if(timeout.toSec() == 0.0)
-            ROS_WARN_THROTTLE_NAMED(0.5, ROS_NAME_CC, "A timeout of 0 implies an infinite timeout, this is probably not smart to use!");
+            ROS_WARN_ONCE_NAMED(ROS_NAME_CC, "A timeout of 0 implies an infinite timeout, this is probably not smart to use! This warning will only be displayed once.");
 
         // Did we get a result or a timeout
         if( simple_client_->waitForResult(ros::Duration(timeout)) )
@@ -330,7 +325,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     // Check if server is connected, sets server_connected_ to false
     void checkForServer()
     {
-        ROS_INFO_NAMED(ROS_NAME_CC, "Client '%s' will check connection to server.", client_name_.c_str()); 
+        ROS_DEBUG_NAMED(ROS_NAME_CC, "Client '%s' will check connection to server.", client_name_.c_str()); 
         cv_.notify_all();
     }
 
@@ -366,8 +361,11 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
                 server_connected_ = true;
             else
             {
+                if(server_connected_)
+                    ROS_WARN_NAMED(ROS_NAME_CC, "Server not connected, will wait for server of client '%s'.", client_name_.c_str()); 
+
                 server_connected_ = false;
-                ROS_WARN_THROTTLE_NAMED(1.0, ROS_NAME_CC, "Server not connected, will continue waiting for server of client '%s'.", client_name_.c_str()); 
+                ros::Duration(1.0).sleep();
                 continue;
             }
         
@@ -385,8 +383,8 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
   private: 
-    std::string                             client_name_;
-    SimpleActionClient<ClientActionType>*   simple_client_;
+    std::string                                         client_name_;
+    actionlib::SimpleActionClient<ClientActionType>*    simple_client_;
 
     SimpleDoneCallback                      custom_succes_cb_;  
     SimpleFailCallback                      custom_fail_cb_;
@@ -397,7 +395,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     std::atomic_bool                last_goal_succes_;
     std::atomic_bool                server_connected_;
 
-    Result                          last_result_;
+    ResultConstPtr                  last_result_;
     std::mutex                      last_result_mutex_; 
 
     std::recursive_mutex            cancel_mutex_;

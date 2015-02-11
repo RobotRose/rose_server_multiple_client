@@ -28,23 +28,22 @@
 #include <actionlib/client/simple_action_client.h>
 #include <actionlib/client/action_client.h>
 
-#include "rose20_common/common.hpp"
-#include "rose20_common/ros_name.hpp"
-#include "rose20_common/server_multiple_client/complex_client.hpp"
+#include "rose_common/common.hpp"
+#include "ros_name/ros_name.hpp"
 
-#include "rose20_common/smc_dummy_serverAction.h"
-#include "rose20_common/smc_dummy_serverActionGoal.h"
-#include "rose20_common/smc_dummy_serverActionResult.h"
-#include "rose20_common/smc_dummy_serverActionFeedback.h"
+#include "server_multiple_client/complex_client.hpp"
+
+#include "server_multiple_client_msgs/smc_dummy_serverAction.h"
+#include "server_multiple_client_msgs/smc_dummy_serverActionGoal.h"
+#include "server_multiple_client_msgs/smc_dummy_serverActionResult.h"
+#include "server_multiple_client_msgs/smc_dummy_serverActionFeedback.h"
 
 #include "thread_safe_stl_containers/thread_safe_map.h"
 
-#define ROS_NAME_SMC    (ROS_NAME + "|SMC")
+#define ROS_NAME_SMC                        (ROS_NAME + "|SMC")
+#define SMC_DEFAULT_CANCELING_TIMEOUT       0.01                  // canceling_timeout specifies the time to wait, before canceling a goal which was send in the past. A canceling_timeout of 0 specifies an infinite timeout.
 
-using namespace std;
-using namespace actionlib;
-
-template <class ServerActionType = rose20_common::smc_dummy_serverAction> class ServerMultipleClient
+template <class ServerActionType = server_multiple_client_msgs::smc_dummy_serverAction> class ServerMultipleClient
 {
   public:
     ACTION_DEFINITION(ServerActionType)
@@ -60,7 +59,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
         , server_started_(false)
     {
         // Create server
-        server_ = new SimpleActionServer<ServerActionType>(n_, server_name_, boost::bind(&ServerMultipleClient<ServerActionType>::CB_serverGoalReceived, this, _1) , false);    
+        server_ = new actionlib::SimpleActionServer<ServerActionType>(n_, server_name_, boost::bind(&ServerMultipleClient<ServerActionType>::CB_serverGoalReceived, this, _1) , false);    
         
         // Register preempt received callback
         server_->registerPreemptCallback(boost::bind(&ServerMultipleClient<ServerActionType>::CB_serverPreempt, this));  
@@ -75,7 +74,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
         cancelAllClients();
         server_started_ = false;
         
-        pair<string, ComplexClientBase*> a_pair; 
+        std::pair<std::string, ComplexClientBase*> a_pair; 
         BOOST_FOREACH(a_pair, clients_) 
         {
             delete a_pair.second;
@@ -111,7 +110,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
         ROS_INFO_NAMED(ROS_NAME_SMC, "Stopped server: %s", server_name_.c_str());
     }
 
-    SimpleActionServer<ServerActionType>* getSimpleServer()
+    actionlib::SimpleActionServer<ServerActionType>* getSimpleServer()
     {
         return server_;
     }
@@ -141,7 +140,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
                                                                                                 CB_custom_active,
                                                                                                 CB_custom_feedback);
         
-        clients_.insert( pair<string, ComplexClientBase*>(client_name, complex_client));
+        clients_.insert( std::pair<std::string, ComplexClientBase*>(client_name, complex_client));
 
         ROS_INFO_NAMED(ROS_NAME_SMC, " Added client: %s", client_name.c_str());
     }
@@ -149,10 +148,31 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
     //! @todo OH [IMPR]: Add send and wait functionality.
     //! @todo OH [IMPR]: Add send and fail send fail result on not completing.
 
-    // send_cancel_wait_time specifies the time to wait, before canceling a goal which was send in the past.
-    // A send_cancel_wait_time of 0 specifies an infinite timeout.
     template <class ClientActionType>
-    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const std::string& client_name, const float& send_cancel_wait_time = 0.0)
+    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const float& canceling_timeout = SMC_DEFAULT_CANCELING_TIMEOUT)
+    {
+        if(clients_.empty())
+        {
+            ROS_ERROR_NAMED(ROS_NAME_SMC, "sendGoal: Cannot sendGoal because there are no clients.");
+            return false;
+        }
+            
+        if(clients_.size() > 1)
+        {
+            ROS_ERROR_NAMED(ROS_NAME_SMC, "sendGoal: Specify a client name when a SMC has more than one client.");
+            return false;
+        }
+        else
+        {
+            // Select the only client 
+            return sendGoal<ClientActionType>(goal, clients_.begin()->first, canceling_timeout);
+        }
+    }
+
+    // canceling_timeout specifies the time to wait, before canceling a goal which was send in the past.
+    // A canceling_timeout of 0 specifies an infinite timeout.
+    template <class ClientActionType>
+    bool sendGoal(const typename ComplexClient<ClientActionType>::Goal& goal, const std::string& client_name, const float& canceling_timeout = SMC_DEFAULT_CANCELING_TIMEOUT)
     {
         ROS_DEBUG_NAMED(ROS_NAME_SMC, "sendGoal -> %s", client_name.c_str());
 
@@ -162,7 +182,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
             return false;
         }
 
-        if(!castComplexClientBaseToComplexClientPtr<ClientActionType>(clients_[client_name])->sendComplexGoal(goal, send_cancel_wait_time))
+        if(!castComplexClientBaseToComplexClientPtr<ClientActionType>(clients_[client_name])->sendComplexGoal(goal, canceling_timeout))
             return false;
 
         latest_client_ = client_name;
@@ -171,7 +191,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
     }
 
     template <class ClientActionType>
-    bool sendGoals(const typename ComplexClient<ClientActionType>::Goal& goal, const std::vector<string>& client_names, const float& send_cancel_wait_time = 0.0)
+    bool sendGoals(const typename ComplexClient<ClientActionType>::Goal& goal, const std::vector<std::string>& client_names, const float& canceling_timeout = SMC_DEFAULT_CANCELING_TIMEOUT)
     {
         if( hasBusyClients() )
         {
@@ -181,7 +201,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
 
         for(const auto& client_name : client_names)
         {
-            if( not sendGoal<ClientActionType>(goal, client_name, send_cancel_wait_time) )
+            if( not sendGoal<ClientActionType>(goal, client_name, canceling_timeout) )
             {
                 cancelAllClients();
                 return false;
@@ -192,7 +212,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
     }
 
     template <class ClientActionType>
-    const typename ComplexClient<ClientActionType>::Result getResult(const std::string& client_name)
+    const typename ComplexClient<ClientActionType>::ResultConstPtr getResult(const std::string& client_name)
     {
         return castComplexClientBaseToComplexClientPtr<ClientActionType>(getClient(client_name))->getLastResult();
     }
@@ -204,19 +224,28 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
         return castComplexClientBaseToComplexClientPtr<ClientActionType>(clients_[latest_client_])->getLastResult();
     }
 
-    bool waitForResult(const std::string& client_name = "", const ros::Duration& timeout = ros::Duration(0.0))
+    bool waitForResult(const ros::Duration& timeout = ros::Duration(0.0))
     {
-        if(client_name == "" and clients_.size() > 1)
+        if(clients_.empty())
+        {
+            ROS_ERROR_NAMED(ROS_NAME_SMC, "waitForResult: Cannot wait for result because there are no clients.");
+            return false;
+        }
+
+        if(clients_.size() > 1)
         {
             ROS_ERROR_NAMED(ROS_NAME_SMC, "waitForResult: Specify a client name when a SMC has more than one client.");
             return false;
         }
-        else if ( client_name == "" )
+        else
         {
             // Select the only client 
-            return clients_.begin()->second->waitForResult(timeout);
+            return waitForResult(clients_.begin()->first, timeout);
         }
+    }
 
+    bool waitForResult(const std::string& client_name, const ros::Duration& timeout = ros::Duration(0.0))
+    {
         return getClient(client_name)->waitForResult(timeout);
     }
 
@@ -236,7 +265,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
         return all_success; 
     }
 
-    bool waitForSuccess(const std::string& client_name = "", const ros::Duration& timeout = ros::Duration(0.0))
+    bool waitForSuccess(const std::string& client_name, const ros::Duration& timeout = ros::Duration(0.0))
     {
         return getClient(client_name)->waitForSuccess(timeout);
     }
@@ -253,7 +282,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
         return true; 
     }
 
-    bool waitForFailed(const std::string& client_name = "", const ros::Duration& timeout = ros::Duration(0.0))
+    bool waitForFailed(const std::string& client_name, const ros::Duration& timeout = ros::Duration(0.0))
     {
         return not waitForSuccess(client_name, timeout);
     }
@@ -490,8 +519,7 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
         if( server_->isPreemptRequested() )
         {
             ROS_DEBUG_NAMED(ROS_NAME_SMC, "CB_serverGoalReceived, Preempted! NOT calling user callback.");
-            // server_->setPreempted(Result(), "Preempted by SMC");
-            // CB_serverPreempt();
+            server_->setPreempted(Result(), "Preempted by SMC");
         }
         else
         {
@@ -559,21 +587,21 @@ template <class ServerActionType = rose20_common::smc_dummy_serverAction> class 
 
 
   private:
-    ros::NodeHandle                                 n_;
+    ros::NodeHandle                                     n_;
     
-    SimpleActionServer<ServerActionType>*           server_;
-    string                                          server_name_;
-    bool                                            server_started_;
-    ServerWorkCallback                              server_work_cb_;
-    ServerPreemptCallback                           server_preempt_cb_;
+    actionlib::SimpleActionServer<ServerActionType>*    server_;
+    std::string                                         server_name_;
+    bool                                                server_started_;
+    ServerWorkCallback                                  server_work_cb_;
+    ServerPreemptCallback                               server_preempt_cb_;
 
-    thread_safe::map<string, ComplexClientBase*>    clients_;   
-    std::string                                     latest_client_;
+    thread_safe::map<std::string, ComplexClientBase*>   clients_;   
+    std::string                                         latest_client_;
 
-    std::mutex                                      set_state_mutex_;
+    std::mutex                                          set_state_mutex_;
 
-    GoalConstPtr                                    last_goal_;
-    std::mutex                                      last_goal_mutex_;
+    GoalConstPtr                                        last_goal_;
+    std::mutex                                          last_goal_mutex_;
 };
 
 #endif // SERVER_MULTIPLE_CLIENT_HPP
