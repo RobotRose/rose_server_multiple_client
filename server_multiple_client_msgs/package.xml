@@ -1,11 +1,11 @@
 <?xml version="1.0"?>
 <package>
   <name>server_multiple_client_msgs</name>
-  <version>0.0.1</version>
+  <version>1.0.0</version>
   <description>Messages used with the server_multiple_client package</description>
 
-  <author email="langen@robot-rose.nl">Mathijs de Langen</author>
-  <maintainer email="langen@robot-rose.nl">Mathijs de Langen</maintainer>
+  <author email="hendriks@robot-rose.nl">Okke Hendriks</author>
+  <maintainer email="hendriks@robot-rose.nl">Okke Hendriks</maintainer>
 
   <license>BSD</license>
 
