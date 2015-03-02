@@ -1,5 +1,5 @@
 /***********************************************************************************
-* Copyright: Rose B.V. (2013)
+* Copyright: Rose B.V. (2013-2015)
 *
 * Revision History:
 *  Author: Okke Hendriks
@@ -7,7 +7,12 @@
 *     - File created.
 *
 * Description:
-*  ComplexActionClient class and base class, header only due to use of templates
+*  ComplexClient class and base class, header only due to the templated nature.
+*  The ComplexClient contains is a warpper around a standard ROS Simple Action Client.
+*  The ComplexClient are the clients which are included in an Server Multiple Client instances.
+*  Their name should correspond to the name of the Simple ActionLib server which they are communicating with.
+* 
+* There is currently a bug/fluke in the ROS logger which causes the ComplexClient debug information to appear with an incorrect name (see https://github.com/ros/ros_comm/issues/561).
 * 
 ***********************************************************************************/
 
