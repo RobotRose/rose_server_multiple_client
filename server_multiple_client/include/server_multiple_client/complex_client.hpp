@@ -284,7 +284,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     {
         if( not hasGoalOutstanding() )
         {
-            ROS_INFO_NAMED(ROS_NAME_CC, "Client '%s' has no outstanding goal, not wait for result required.", client_name_.c_str());
+            ROS_DEBUG_NAMED(ROS_NAME_CC, "Client '%s' has no outstanding goal, no wait for result required.", client_name_.c_str());
             return true;
         }
 
