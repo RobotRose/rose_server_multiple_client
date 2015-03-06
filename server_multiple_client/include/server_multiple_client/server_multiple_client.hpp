@@ -565,7 +565,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
      */
     bool cancelAllClients(const ros::Duration& timeout = ros::Duration(SMC_DEFAULT_CANCEL_TIMEOUT))
     {
-        ROS_INFO_NAMED(ROS_NAME_SMC, "Canceling %d clients.", (int)clients_.size());
+        ROS_DEBUG_NAMED(ROS_NAME_SMC, "Canceling %d clients.", (int)clients_.size());
         
         unsigned int canceledCount  = 0;
         unsigned int activeCount    = 0;
@@ -578,12 +578,12 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
                 if( a_pair.second->cancelGoal(timeout) )
                 {
                     canceledCount++;
-                    ROS_INFO_NAMED(ROS_NAME_SMC, "Canceled client: %s", a_pair.first.c_str());
+                    ROS_DEBUG_NAMED(ROS_NAME_SMC, "Canceled client: %s", a_pair.first.c_str());
                 }
             }
         }
         
-        ROS_INFO_NAMED(ROS_NAME_SMC, "%d/%d active clients canceled, %d clients where inactive.", canceledCount, activeCount, (unsigned int)clients_.size() - activeCount);
+        ROS_DEBUG_NAMED(ROS_NAME_SMC, "%d/%d active clients canceled, %d clients where inactive.", canceledCount, activeCount, (unsigned int)clients_.size() - activeCount);
 
         // Return true only if all active clients have been canceled
         if(activeCount == canceledCount)
@@ -799,7 +799,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
                 ROS_DEBUG_NAMED(ROS_NAME_SMC, "CB_serverPreempt, server is active.");
 
                 // All clients will be canceled if deleted  
-                ROS_INFO_NAMED(ROS_NAME_SMC, "The server received a preempt request, canceling clients.");
+                ROS_DEBUG_NAMED(ROS_NAME_SMC, "The server received a preempt request, canceling clients.");
                 cancelAllClients();
 
                 // Call custom preempt callback
@@ -807,10 +807,10 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
                     server_preempt_cb_(this);
 
                 // When all clients are canceled set server as preempted
-                ROS_INFO_NAMED(ROS_NAME_SMC, "Setting server as being preempted.");
+                ROS_DEBUG_NAMED(ROS_NAME_SMC, "Setting server as being preempted.");
                 server_->setPreempted(Result(), "Preempted by SMC");
 
-                ROS_INFO_NAMED(ROS_NAME_SMC, "Server '%s' preempted.", server_name_.c_str());
+                ROS_DEBUG_NAMED(ROS_NAME_SMC, "Server '%s' preempted.", server_name_.c_str());
             }
             else
                 ROS_DEBUG_NAMED(ROS_NAME_SMC, "CB_serverPreempt, server is NOT active.");
