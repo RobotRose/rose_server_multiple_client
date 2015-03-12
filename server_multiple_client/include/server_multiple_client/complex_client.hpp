@@ -41,6 +41,10 @@
 
 #define SMC_DEFAULT_CANCEL_TIMEOUT  1.0  // [s]
 
+/**
+ * @brief ComplexClientBase is the base class for the ComplexClient
+ * @details This bass class enables the storage of multiple templated types of ComplexClient in one std::map
+ */
 class ComplexClientBase
 {
 public: 
@@ -55,7 +59,13 @@ public:
     virtual std::string getName() = 0;
 };
 
-
+/**
+ * @brief The ComplexClient a container for the SimpleActionClient used in the ServerMultipleClient
+ * @details The ComplexClient manages the state of an SimpleActionClient. It inherits from the ComplexClientBase class in order
+ * to have multiple types (different templates) in one std::map in the ServerMultipleClient. 
+ * 
+ * @tparam ClientActionType The action definition type
+ */
 template <class ClientActionType> class ComplexClient : public ComplexClientBase
 {
   public:
@@ -65,6 +75,17 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     typedef boost::function<void () > SimpleActiveCallback;
     typedef boost::function<void (const FeedbackConstPtr& feedback) > SimpleFeedbackCallback;
     
+    /**
+     * @brief Constructor of the ComplexClient
+     * @details Create a ComplexClient instance. The provided name will be used by the internal SimpleActionClient to find the SimpleActionServer.
+     * Four callback functions can optionally be registered.
+     * 
+     * @param client_name Name of this Complex.
+     * @param custom_done_cb Callback function called when a goal was succefully processed by an associated server.
+     * @param custom_fail_cb Callback function called when a goal was unsuccefully processed by an associated server.
+     * @param custom_active_cb Callback function called when handling of a goal became active.
+     * @param custom_feedback_cb Callback function called when feedback of an active goal has been received.
+     */
     ComplexClient(const std::string& client_name,   SimpleDoneCallback      custom_done_cb      = NULL,
                                                     SimpleFailCallback      custom_fail_cb      = NULL,
                                                     SimpleActiveCallback    custom_active_cb    = NULL, 
@@ -90,6 +111,10 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         checkForServer();
     }
 
+    /**
+     * @brief Destructor
+     * @details If an goal was active it will first be canceled.
+     */
     ~ComplexClient()
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "Destructor client '%s'.", client_name_.c_str());
@@ -102,6 +127,10 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         delete simple_client_;
     }
 
+    /**
+     * @brief Return if the server of this client is connected
+     * @return Returns the server_connected_ variable.
+     */
     bool isServerConnected()
     {
         return server_connected_;
@@ -110,6 +139,15 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     // Send a goal to the server.
     // canceling_timeout specifies the time to wait before canceling a goal which was send in the past.
     // A canceling_timeout of 0 specifies an infinite timeout.
+    /**
+     * @brief Send a goal to the associated SimpleActionServer
+     * @details Provide a goal to send to the server. The canceling timeout specifies the time to wait before canceling a goal which was send in the past. 
+     * 
+     * @param goal Goal which will be send to the server of the client.
+     * @param canceling_timeout Specifies the time to wait before canceling a goal which was send in the past. A canceling_timeout of 0 specifies an infinite timeout.
+     * 
+     * @return false if the server was not connected or if a previous goal could not be send. True otherwise.
+     */
     bool sendComplexGoal(const Goal& goal, float canceling_timeout)
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "Sending goal to client '%s'.", client_name_.c_str());
@@ -152,7 +190,13 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         return true;
     }
 
-    // Returns false if canceling timed out, returns true if canceled or if goal finished any other way
+    /**
+     * @brief Cancel a goal.
+     * @details Provide an optional timeout to wait for a cancel acknowledged.
+     * 
+     * @param timeout Timeout that specifies how long to wait for a 'cancel acknowledged'. A timeout of 0.0 specifies an infinite timeout.
+     * @return false if canceling timed out, returns true if canceled or if goal finished any other way.
+     */
     bool cancelGoal(const ros::Duration& timeout = ros::Duration(SMC_DEFAULT_CANCEL_TIMEOUT))
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "cancelGoal '%s'.", client_name_.c_str());
@@ -204,6 +248,57 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         return waitForResult(timeout);
     }
 
+    /**
+     * @brief Get the name of the ComplexClient
+     * @return client_name_
+     */
+    std::string getName()
+    {
+        return client_name_;
+    }
+
+    /**
+     * @brief Return if the ComplexClient has a goal outstanding at a server.
+     * @return goal_outstanding_
+     */
+    bool hasGoalOutstanding()
+    {
+        return goal_outstanding_;
+    }
+
+    /**
+     * @brief Get the last received result
+     * 
+     * @return last_result_ or an empty Result if last_result_ was not yet set.
+     */
+    ResultConstPtr getLastResult()
+    {
+        std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
+        
+        if(last_result_ == NULL)
+            return ResultConstPtr(new Result);
+
+        return last_result_;
+    }
+
+    /**
+     * @brief Return if the last result was a succesfully result
+     * @return last_goal_succes_
+     */
+    bool getLastGoalSucces()
+    {
+        return last_goal_succes_;
+    }
+
+  private:
+
+    /**
+     * @brief Internal callback function registerd with the internal SimpleActionClient
+     * @details Calls the user callback functions (custom_succes_cb_, custom_fail_cb_) when succeeded or aborted, if they have been registered.
+     * 
+     * @param state State of the goal.
+     * @param result Result message of the goal.
+     */
     void CB_clientDone(const actionlib::SimpleClientGoalState& state,  const ResultConstPtr& result)
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "CB_clientDone() client '%s', goal state: %s", client_name_.c_str(), state.toString().c_str());
@@ -230,6 +325,10 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         ROS_DEBUG_NAMED(ROS_NAME_CC, "CB_clientDone() client '%s' finished", client_name_.c_str());
     }
 
+    /**
+     * @brief Internal callback function called by the SimpleActionClient if a goal has been accepted.
+     * @details Calls the optionally registered user callback function custom_active_cb_
+     */
     void CB_clientActive()
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "CB_clientActive()");
@@ -238,6 +337,13 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
             custom_active_cb_();
     }
 
+    /**
+     * @brief Internal callback funtion called by the SimpleActionClient in order to provide feedback about the 
+     * processing of a goal.
+     * @details Calls the optional user callback function custum_feedback_cb_.
+     * 
+     * @param feedback Provided feedback message.
+     */
     void CB_clientFeedback(const FeedbackConstPtr& feedback)
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "CB_clientFeedback()");
@@ -246,33 +352,12 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
             custom_feedback_cb_(feedback);
     }
 
-    std::string getName()
-    {
-        return client_name_;
-    }
-
-    bool hasGoalOutstanding()
-    {
-        return goal_outstanding_;
-    }
-
-    ResultConstPtr getLastResult()
-    {
-        std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
-        
-        if(last_result_ == NULL)
-            return ResultConstPtr(new Result);
-
-        return last_result_;
-    }
-
-    bool getLastGoalSucces()
-    {
-        return last_goal_succes_;
-    }
-
-  private:
-
+    /**
+     * @brief Setter for last_result_
+     * @details Use this setter to safely set last_result_ using the appropiate mutex.
+     * 
+     * @param result The result to store in last_result_
+     */
     void setLastResult(ResultConstPtr result)
     {
         std::lock_guard<std::mutex> last_result_lock(last_result_mutex_);
@@ -280,6 +365,13 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     // SMC internal wait for result function
+    /**
+     * @brief ComplexClient wait for result function.
+     * @details Waits for the result of this client with a certain timeout.
+     * 
+     * @param timeout Timeout determines how long to wait for the client. A timeout of 0.0 (default) waits infinitly.
+     * @return true if no waiting had to been done or if a result has been received. False otherwise.
+     */
     bool waitForResult(const ros::Duration& timeout = ros::Duration(0.0))
     {
         if( not hasGoalOutstanding() )
@@ -316,24 +408,42 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         return false;
     }
 
+    /**
+     * @brief Return if waitForResult() succeded and if the goal has been processed succesfully.
+     * 
+     * @param timeout Timeout passed to waitForResult().
+     * @return true if waitForResult() succeeded and if the goal has been processed succesfully. False otherwise.
+     */
     bool waitForSuccess(const ros::Duration& timeout = ros::Duration(0.0))
     {
         return waitForResult(timeout) && last_goal_succes_;
     }
 
+    /**
+     * @brief Return if waitForResult() succeded and if the goal has been processed unsuccesfully.
+     * 
+     * @param timeout Timeout passed to waitForResult().
+     * @return true if waitForResult() succeeded and if the goal has been processed unsuccesfully. False otherwise
+     */
     bool waitForFailed(const ros::Duration& timeout = ros::Duration(0.0))
     {
         return not waitForSuccess(timeout);
     }
     
 
-    // Check if server is connected, sets server_connected_ to false
+    /**
+     * @brief Check if the SimpleActionServer of the internal SimpleActionClient has been connected.
+     * @details This will notify the connection check loop to start checking for the server.
+     */
     void checkForServer()
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "Client '%s' will check connection to server.", client_name_.c_str()); 
         cv_.notify_all();
     }
 
+    /**
+     * @brief Start a the waitForServerThread() thread.
+     */
     void startWaitForServerThread()
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "Starting wait for server thread.");
@@ -347,6 +457,9 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         wait_for_server_thread_ = std::thread(&ComplexClient<ClientActionType>::waitForServerThread, this);
     }
 
+    /**
+     * @brief Stop the waitForServerThread() thread.
+     */
     void stopWaitForServerThread()
     {
         ROS_INFO_NAMED(ROS_NAME_CC, "Client '%s' will stop trying to connect to server.", client_name_.c_str()); 
@@ -355,6 +468,10 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
         wait_for_server_thread_.join();
     }
 
+    /**
+     * @brief Check's for a life connection between the SimpleActionClient and associated SimpleActionServer.
+     * @details Sets server_connected_ accordingly. When connected needs to be restartedby calling checkForServer()
+     */
     void waitForServerThread()
     {
         ros::NodeHandle n;
@@ -391,10 +508,10 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     std::string                                         client_name_;
     actionlib::SimpleActionClient<ClientActionType>*    simple_client_;
 
-    SimpleDoneCallback                      custom_succes_cb_;  
-    SimpleFailCallback                      custom_fail_cb_;
-    SimpleActiveCallback                    custom_active_cb_;      
-    SimpleFeedbackCallback                  custom_feedback_cb_;
+    SimpleDoneCallback              custom_succes_cb_;  
+    SimpleFailCallback              custom_fail_cb_;
+    SimpleActiveCallback            custom_active_cb_;      
+    SimpleFeedbackCallback          custom_feedback_cb_;
 
     std::atomic_bool                goal_outstanding_;
     std::atomic_bool                last_goal_succes_;
