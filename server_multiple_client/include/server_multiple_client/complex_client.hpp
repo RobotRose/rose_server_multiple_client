@@ -151,13 +151,13 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     bool cancelGoal(const ros::Duration& timeout = ros::Duration(SMC_DEFAULT_CANCEL_TIMEOUT))
     {
         ROS_DEBUG_NAMED(ROS_NAME_CC, "cancelGoal '%s'.", client_name_.c_str());
-        std::lock_guard<std::recursive_mutex> lock(cancel_mutex_);
-
         if( not hasGoalOutstanding() )
         {
             ROS_DEBUG_NAMED(ROS_NAME_CC, "cancelGoal '%s', no goal outstanding.", client_name_.c_str());
             return true;
         }
+
+        std::lock_guard<std::recursive_mutex> lock(cancel_mutex_);
 
         // Check if we are actually persuing a goal, otherwise we should not cancel
         const actionlib::SimpleClientGoalState& goal_state = simple_client_->getState();
