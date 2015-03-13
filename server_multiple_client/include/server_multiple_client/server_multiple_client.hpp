@@ -351,7 +351,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     }
 
     /**
-     * @brief Wait for, the only client added, to have a result available.
+     * @brief Wait for, the specified client, to have a result available.
      * 
      * @param timeout The maximal time the function will block waiting on a result. A timeout of 0.0 specifies an infinite timeout.
      * @return false if there is not exactly one client added to this SMC or the return value of the ComplexClient::waitForResult function.
