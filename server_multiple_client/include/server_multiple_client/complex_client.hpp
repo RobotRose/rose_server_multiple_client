@@ -8,8 +8,8 @@
 *
 * Description:
 *  ComplexClient class and base class, header only due to the templated nature.
-*  The ComplexClient contains is a warpper around a standard ROS Simple Action Client.
-*  The ComplexClient are the clients which are included in an Server Multiple Client instances.
+*  The ComplexClient contains is a wrapper around a standard ROS Simple Action Client.
+*  The ComplexClient are the clients which are included in a Server Multiple Client.
 *  Their name should correspond to the name of the Simple ActionLib server which they are communicating with.
 * 
 * There is currently a bug/fluke in the ROS logger which causes the ComplexClient debug information to appear with an incorrect name (see https://github.com/ros/ros_comm/issues/561).
@@ -43,7 +43,7 @@
 
 /**
  * @brief ComplexClientBase is the base class for the ComplexClient
- * @details This bass class enables the storage of multiple templated types of ComplexClient in one std::map
+ * @details This base class enables the storage of multiple templated types of ComplexClient in one std::map
  */
 class ComplexClientBase
 {
@@ -128,8 +128,8 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     /**
-     * @brief Return if the server of this client is connected
-     * @return Returns the server_connected_ variable.
+     * @brief Return whether the server of this client is connected
+     * @return server_connected_
      */
     bool isServerConnected()
     {
@@ -137,16 +137,16 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     // Send a goal to the server.
-    // canceling_timeout specifies the time to wait before canceling a goal which was send in the past.
+    // canceling_timeout specifies the time to wait before canceling a goal which was sent in the past.
     // A canceling_timeout of 0 specifies an infinite timeout.
     /**
      * @brief Send a goal to the associated SimpleActionServer
-     * @details Provide a goal to send to the server. The canceling timeout specifies the time to wait before canceling a goal which was send in the past. 
+     * @details Provide a goal to send to the server. The canceling timeout specifies the time to wait before canceling a goal which was sent in the past. 
      * 
-     * @param goal Goal which will be send to the server of the client.
-     * @param canceling_timeout Specifies the time to wait before canceling a goal which was send in the past. A canceling_timeout of 0 specifies an infinite timeout.
+     * @param goal Goal which will be sent to the server of the client.
+     * @param canceling_timeout Specifies the time to wait before canceling a goal which was sent in the past. A canceling_timeout of 0 specifies an infinite timeout.
      * 
-     * @return false if the server was not connected or if a previous goal could not be send. True otherwise.
+     * @return false if the server was not connected or if a previous goal could not be sent. True otherwise.
      */
     bool sendComplexGoal(const Goal& goal, float canceling_timeout)
     {
@@ -258,7 +258,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     /**
-     * @brief Return if the ComplexClient has a goal outstanding at a server.
+     * @brief Return whether the ComplexClient has a goal outstanding at a server.
      * @return goal_outstanding_
      */
     bool hasGoalOutstanding()
@@ -282,7 +282,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     /**
-     * @brief Return if the last result was a succesfully result
+     * @brief Return whether the last result was a succesfully result
      * @return last_goal_succes_
      */
     bool getLastGoalSucces()
@@ -293,7 +293,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
   private:
 
     /**
-     * @brief Internal callback function registerd with the internal SimpleActionClient
+     * @brief Internal callback function registered with the internal SimpleActionClient
      * @details Calls the user callback functions (custom_succes_cb_, custom_fail_cb_) when succeeded or aborted, if they have been registered.
      * 
      * @param state State of the goal.
@@ -409,7 +409,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     /**
-     * @brief Return if waitForResult() succeded and if the goal has been processed succesfully.
+     * @brief Return whether waitForResult() succeded and if the goal has been processed succesfully.
      * 
      * @param timeout Timeout passed to waitForResult().
      * @return true if waitForResult() succeeded and if the goal has been processed succesfully. False otherwise.
@@ -420,7 +420,7 @@ template <class ClientActionType> class ComplexClient : public ComplexClientBase
     }
 
     /**
-     * @brief Return if waitForResult() succeded and if the goal has been processed unsuccesfully.
+     * @brief Return whether waitForResult() succeded and if the goal has been processed unsuccesfully.
      * 
      * @param timeout Timeout passed to waitForResult().
      * @return true if waitForResult() succeeded and if the goal has been processed unsuccesfully. False otherwise
