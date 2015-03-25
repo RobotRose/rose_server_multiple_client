@@ -678,7 +678,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     }
 
     /**
-     * @brief Get the current goal of the server side of the SMC. Returns
+     * @brief Get the current goal of the server side of the SMC.
      * @return True of there is a current goal, false otherwise
      */
     bool getCurrentGoal(GoalConstPtr goal)
@@ -697,11 +697,27 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
      * @brief Get the last goal received by the server side of the SMC.
      * @return last_goal_
      */
-    GoalConstPtr getLastGoal()
+    GoalConstPtr __attribute__((deprecated)) getLastGoal()
     {
         std::lock_guard<std::mutex> lock(goal_mutex);
         return last_goal_;
     }
+
+    /**
+     * @brief Get the last goal received by the server side of the SMC.
+     * @return  True of there is a current goal, false otherwise
+     */
+    bool getLastGoal(GoalConstPtr goal)
+    {
+        std::lock_guard<std::mutex> lock(goal_mutex);
+        if ( last_goal_ != NULL )
+        {
+            goal = last_goal_;
+            return true;
+        }
+
+        return false;
+    }    
 
     /**
      * @brief Get the name of the server.
