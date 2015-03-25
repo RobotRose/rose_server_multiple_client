@@ -697,6 +697,7 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
      * @brief Get the last goal received by the server side of the SMC.
      * @return last_goal_
      */
+    //! @todo MdL [IMPR]: Remove function when possible. Deprecation warning for now.
     GoalConstPtr __attribute__((deprecated)) getLastGoal()
     {
         std::lock_guard<std::mutex> lock(goal_mutex);
