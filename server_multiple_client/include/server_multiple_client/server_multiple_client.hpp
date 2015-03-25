@@ -678,14 +678,47 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
     }
 
     /**
+     * @brief Get the current goal of the server side of the SMC.
+     * @return True of there is a current goal, false otherwise
+     */
+    bool getCurrentGoal(GoalConstPtr goal)
+    {
+        std::lock_guard<std::mutex> lock(goal_mutex);
+        if ( current_goal_ != NULL )
+        {
+            goal = current_goal_;
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * @brief Get the last goal received by the server side of the SMC.
      * @return last_goal_
      */
-    GoalConstPtr getLastGoal()
+    //! @todo MdL [IMPR]: Remove function when possible. Deprecation warning for now.
+    GoalConstPtr __attribute__((deprecated)) getLastGoal()
     {
-        std::lock_guard<std::mutex> lock(last_goal_mutex_);
+        std::lock_guard<std::mutex> lock(goal_mutex);
         return last_goal_;
     }
+
+    /**
+     * @brief Get the last goal received by the server side of the SMC.
+     * @return  True of there is a current goal, false otherwise
+     */
+    bool getLastGoal(GoalConstPtr goal)
+    {
+        std::lock_guard<std::mutex> lock(goal_mutex);
+        if ( last_goal_ != NULL )
+        {
+            goal = last_goal_;
+            return true;
+        }
+
+        return false;
+    }    
 
     /**
      * @brief Get the name of the server.
@@ -762,12 +795,18 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
             // Call custom work callback
             ROS_DEBUG_NAMED(ROS_NAME_SMC, "CB_serverGoalReceived, no preempt calling user callback.");
 
+            // Store current goal
+            goal_mutex.lock();
+            current_goal_   = goal;
+            goal_mutex.unlock();
+
             server_work_cb_(goal, this);
 
             // Store previous goal
-            last_goal_mutex_.lock();
-            last_goal_ = goal;
-            last_goal_mutex_.unlock();
+            goal_mutex.lock();
+            current_goal_   = GoalConstPtr(); // Reset pointer
+            last_goal_      = goal;
+            goal_mutex.unlock();
 
             // Wait until server result has been set or the node is shutdown
             while( n_.ok() and server_->isActive() )
@@ -840,8 +879,9 @@ template <class ServerActionType = server_multiple_client_msgs::smc_dummy_server
 
     std::mutex                                          set_state_mutex_;
 
+    GoalConstPtr                                        current_goal_;
     GoalConstPtr                                        last_goal_;
-    std::mutex                                          last_goal_mutex_;
+    std::mutex                                          goal_mutex;
 };
 
 #endif // SERVER_MULTIPLE_CLIENT_HPP
